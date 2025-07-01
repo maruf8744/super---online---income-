@@ -1,43 +1,33 @@
-# Laravel base image
-FROM php:8.2-fpm
+FROM php:8.1-fpm
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    zip \
-    unzip \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl gd
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Set working directory
 WORKDIR /var/www
 
-# Copy project files
+RUN apt-get update && apt-get install -y \
+    libonig-dev \
+    libzip-dev \
+    unzip \
+    zip \
+    curl \
+    git \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libxml2-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    zlib1g-dev \
+    libonig5 \
+    && docker-php-ext-install pdo_mysql mbstring zip gd
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 COPY . .
 
-# Install dependencies
-RUN composer install --optimize-autoloader --no-dev
+RUN mkdir -p storage bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache
 
-# Give permission to storage & bootstrap
-RUN chmod -R 777 storage bootstrap/cache
+RUN composer install --no-interaction --optimize-autoloader --no-dev
 
-# Expose port (optional)
 EXPOSE 8000
 
-# Start Laravel development server
-CMD php artisan serve --host=0.0.0.0 --port=8000
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
