@@ -1,33 +1,30 @@
-FROM php:8.1-fpm
+FROM php:8.2-apache
 
-WORKDIR /var/www
-
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libonig-dev \
-    libzip-dev \
-    unzip \
-    zip \
-    curl \
-    git \
     libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
+    libonig-dev \
     libxml2-dev \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    zlib1g-dev \
-    libonig5 \
-    && docker-php-ext-install pdo_mysql mbstring zip gd
+    zip \
+    unzip \
+    git \
+    curl \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
-COPY . .
+# Set working directory
+WORKDIR /var/www/html
 
-RUN mkdir -p storage bootstrap/cache && \
-    chmod -R 777 storage bootstrap/cache
+# Copy existing application directory
+COPY . /var/www/html
 
-RUN composer install --no-interaction --optimize-autoloader --no-dev
+# Permissions
+RUN chmod -R 775 storage bootstrap/cache
 
-EXPOSE 8000
+# Expose port 80
+EXPOSE 80
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+CMD ["apache2-foreground"]
